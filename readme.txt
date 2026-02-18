@@ -1,135 +1,36 @@
-SE3020 – Distributed Systems
-Lab 2 – Java RMI
+SE3020 – Lab 2: Java RMI  
 
-Student ID: IT23594586
-Name: Hanaan M.F.A.S
-
-------------------------------------------------------------
-Lab Objective
-------------------------------------------------------------
-
-The objective of this lab is to understand Java RMI (Remote Method Invocation), 
-how remote objects are created, how clients communicate with the server, 
-and how concurrency is handled in RMI.
-
-------------------------------------------------------------
-Step 8 – Long Running Loop Observation
-------------------------------------------------------------
-
-The divide() method was modified by uncommenting a long running loop.
-
-Observation:
-
-• When one client calls the divide() method, that client blocks until 
-  the method execution finishes.
-• Other clients can still connect and invoke other methods.
-• This shows that RMI creates a separate thread for each client request.
-• Communication in RMI is synchronous and blocking.
-• The client waits until the server completes the method execution.
-
-Conclusion:
-
-The RMI server is multi-threaded and can handle multiple clients concurrently.
-However, each client call is synchronous.
-
-------------------------------------------------------------
-Step 9 – Client Count Feature
-------------------------------------------------------------
-
-A global variable was added to MathServer class:
-
-    private int clientCount = 0;
-
-A new remote method was added:
-
-    public synchronized int incrementClientCount() throws RemoteException
-
-This method:
-• Increments the client count.
-• Prints the current client count.
-• Returns the updated count to the client.
-
-The client calls incrementClientCount() before performing calculations.
-
-When multiple clients are started, the count increases globally:
-
-Client 1 -> Count = 1
-Client 2 -> Count = 2
-Client 3 -> Count = 3
-
-------------------------------------------------------------
-Thread Safety Explanation
-------------------------------------------------------------
-
-The incrementClientCount() method was declared as synchronized.
-
-Reason:
-
-• Multiple clients can connect at the same time.
-• All threads share the same clientCount variable.
-• Without synchronization, race conditions may occur.
-• Two threads may update the value simultaneously causing incorrect results.
-
-Using synchronized ensures:
-
-• Only one thread can update the shared variable at a time.
-• The client count is always accurate.
-• Thread safety is maintained.
-
-------------------------------------------------------------
-Step 10 – Server Object Instantiation
-------------------------------------------------------------
-
-The client count feature shows that the server object uses 
-Singleton instantiation.
-
-Reason:
-
-• Only one MathServer object is created.
-• All clients share the same object.
-• The clientCount variable is shared among all clients.
-• The count increases globally.
-
-------------------------------------------------------------
-How to Make Per Client Instantiation
-------------------------------------------------------------
-
-To make the server per-client:
-
-• Create a Factory class.
-• Bind the factory object in the RMI registry.
-• Each client requests a new MathServer instance from the factory.
-• Each client will then get a separate server object.
-• Shared variables will not be shared anymore.
-
-------------------------------------------------------------
-How to Make Per Call Instantiation
-------------------------------------------------------------
-
-To make the server per-call:
-
-• Create a new object for every remote method call.
-OR
-• Use RMI Activation framework.
-
-In this case:
-
-• No shared state exists.
-• Each method call works independently.
+Student Name: M.F.A.S Hanaan 
+Registration ID: IT23594586 
 
 
+1. Thread Safety in Client Count
+
+In the MathServer class, we added a global variable to keep track of the number of connected clients:
+
+private int clientCount = 0;
+
+To safely update this shared variable when multiple clients connect concurrently, we implemented the incrementClientCount() method as synchronized:
+
+public synchronized int incrementClientCount() throws RemoteException {
+    clientCount++;
+    return clientCount;
+}
+
+Explanation:  
+- The synchronized keyword ensures that only one thread at a time can execute this method.  
+- Without synchronization, if two clients call this method at the same time, both could read the same value, increment it, and write it back incorrectly (race condition).  
+- By synchronizing the method, each client’s connection is processed atomically, ensuring the correct client count.
 
 
-------------------------------------------------------------
-Conclusion
-------------------------------------------------------------
+2. Server Object Instantiation Analysis
 
-This lab demonstrates:
+The behavior of the server with the client count feature shows that the MathServer object is a Singleton. This means that one server object is created and shared among all clients.  
 
-• How Java RMI works.
-• How remote objects are registered and accessed.
-• How RMI handles multiple clients using threads.
-• The importance of thread safety in distributed systems.
-• Different object instantiation models in RMI 
-  (Singleton, Per Client, Per Call).
+- Singleton: One server object handles all clients, and shared variables like clientCount are visible to all clients. This is the current implementation in the lab.  
+- Per Client: Each client would have a separate server object, so the client count would be maintained separately for each client. To implement this, you could create a new MathServer object for each client and bind each object to the RMI registry with a unique name.  
+- Per Call: Each remote method call would create a new MathServer object, so no shared state would exist between calls. This can be implemented using UnicastRemoteObject.exportObject() for each call.
 
+Conclusion:  
+- The current MathServer is Singleton, which allows shared variables to be accessed by all clients.  
+- Synchronization is necessary to maintain thread safety when multiple clients access shared resources concurrently.
